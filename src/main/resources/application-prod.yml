@@ -1,5 +1,30 @@
 spring:
+  config:
+    import: "aws-parameterstore:/config/ch4Assignment"
+
+  datasource:
+    url: ${spring.datasource.url}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    username: ${spring.datasource.username}
+    password: ${spring.datasource.password}
+
   jpa:
+    database-platform: org.hibernate.dialect.MySQLDialect
     hibernate:
       ddl-auto: none
     show-sql: false
+
+spring.cloud.aws.region.static: ap-northeast-2
+
+info:
+  team:
+    name: ${team-name}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health, info # 💡 info 경로 웹 개방
+  info:
+    env:
+      enabled: true
