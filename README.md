@@ -19,3 +19,9 @@ http://43.203.245.57:8080/actuator/info
 ### RDS 보안 그룹 스크린샷
 ![레벨 2](./images/rds1.png)
 ![레벨 2](./images/rds2.png)
+
+## LV 3 - 프로필 사진 기능 추가와 권한 관리 
+
+### S3 비공개 버킷 프로필 이미지 접근 성공 스크린샷
+![레벨 3](./images/downUrl.png)
+![레벨 3](./images/downUrl2.png)
