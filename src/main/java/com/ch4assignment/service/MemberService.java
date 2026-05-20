@@ -35,4 +35,24 @@ public class MemberService {
         );
         return GetMemberResponse.from(member);
     }
+
+    @Transactional
+    public void updateMemberImageKey(Long id, String key) {
+        Member member = memberRepository.findById(id).orElseThrow(
+                () -> new IllegalArgumentException("존재하지 않는 팀원입니다.")
+        );
+        member.uploadProfileImageUrl(key);
+    }
+
+    @Transactional(readOnly = true)
+    public String getMemberImageKey(Long id) {
+        Member member = memberRepository.findById(id).orElseThrow(
+                () -> new IllegalArgumentException("존재하지 않는 팀원입니다.")
+        );
+        if (member.getProfileImageUrl() == null || member.getProfileImageUrl().isEmpty()) {
+            throw new IllegalArgumentException("등록된 이미지가 없습니다.");
+        }
+        return member.getProfileImageUrl();
+
+    }
 }
