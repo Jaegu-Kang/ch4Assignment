@@ -13,7 +13,7 @@ EC2 퍼블릭 IP: 43.203.245.57
 ## LV 2 - DB 분리 및 보안 연결하기
 
 ### Actuator Info 엔드포인트 URL
-![레벨 2](./images/info.png)
+![레벨 2](./images/Inf0.png)
 http://43.203.245.57:8080/actuator/info
 
 ### RDS 보안 그룹 스크린샷
