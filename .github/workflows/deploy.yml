@@ -41,6 +41,10 @@ jobs:
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v2
 
+      # [중요] ARM64 교차 컴파일을 위한 QEMU 가상화 에뮬레이터 추가
+      - name: QEMU 가상화 에뮬레이터 설정
+        uses: docker/setup-qemu-action@v3
+
       - name: Docker 빌드 환경 설정 (Buildx)
         uses: docker/setup-buildx-action@v3
 
@@ -50,6 +54,7 @@ jobs:
           context: .
           file: ./Dockerfile
           push: true
+          # [핵심 교정] EC2 아키텍처 호환성을 위해 amd64와 arm64 멀티 플랫폼 빌드를 지정합니다.
           platforms: linux/amd64, linux/arm64
           tags: ${{ steps.login-ecr.outputs.registry }}/ch4-assignment:latest
           cache-from: type=gha
@@ -57,14 +62,12 @@ jobs:
 
       - name: Appleboy SSH 명령어를 통해 EC2에 배포 실행
         uses: appleboy/ssh-action@v1.0.3
-        # [교정 완료] 가상 러너 단계의 env 블록을 with 지시어보다 상위에 바인딩합니다.
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USERNAME }}
           key: ${{ secrets.EC2_SSH_KEY }}
-          # 상위 env에 정의된 변수명을 명시하여 원격지(EC2) 내부 터미널 셸로 이식합니다.
           envs: ECR_REGISTRY
           script: |
             echo "1. AWS ECR 자격 증명 갱신 (EC2 내부 로그인)"
