@@ -60,26 +60,26 @@ jobs:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USERNAME }}
           key: ${{ secrets.EC2_SSH_KEY }}
-          # [핵심 교정] 가상 호스트의 변수를 env 설정을 통해 리눅스 환경 변수로 안전하게 이식합니다.
+          # [교정 포인트] with 내부의 하위 파라미터로 envs를 선언하고, 변수명을 명시합니다.
           envs: ECR_REGISTRY
           script: |
-            # 가상 호스트의 결과 출력을 원격 변수에 사전 바인딩합니다.
+            # 1. 런타임에 주입된 가상 변수를 export 문을 통해 리눅스 셸에 확실히 바인딩합니다.
             export ECR_REGISTRY=${{ steps.login-ecr.outputs.registry }}
             
-            echo "1. AWS ECR 자격 증명 갱신 (EC2 내부 로그인)"
-            aws ecr get-login-password --region ap-northeast-2 | sudo docker login --username AWS --password-stdin $ECCR_REGISTRY
+            echo "AWS ECR 자격 증명 갱신 (EC2 내부 로그인)"
+            aws ecr get-login-password --region ap-northeast-2 | sudo docker login --username AWS --password-stdin $ECR_REGISTRY
             
-            echo "2. 기존 실행 중인 도커 컨테이너 검사 및 제거"
+            echo "기존 실행 중인 도커 컨테이너 검사 및 제거"
             if [ "$(sudo docker ps -aq -f name=ch4-app)" ]; then
                 sudo docker stop ch4-app
                 sudo docker rm ch4-app
             fi
             
-            echo "3. AWS ECR로부터 최신 컨테이너 이미지 가져오기 (Pull)"
+            echo "AWS ECR로부터 최신 컨테이너 이미지 가져오기 (Pull)"
             sudo docker pull $ECR_REGISTRY/ch4-assignment:latest
             
-            echo "4. 새 컨테이너 백그라운드 구동 (8080 포트 바인딩)"
+            echo "새 컨테이너 백그라운드 구동 (8080 포트 바인딩)"
             sudo docker run -d --name ch4-app -p 8080:8080 $ECR_REGISTRY/ch4-assignment:latest
             
-            echo "5. 불필요한 구버전 이미지 정리"
+            echo "불필요한 구버전 이미지 정리"
             sudo docker image prune -f
