@@ -56,30 +56,30 @@ jobs:
 
       - name: Appleboy SSH 명령어를 통해 EC2에 배포 실행
         uses: appleboy/ssh-action@v1.0.3
+        # [교정 완료] 가상 러너 단계의 env 블록을 with 지시어보다 상위에 바인딩합니다.
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USERNAME }}
           key: ${{ secrets.EC2_SSH_KEY }}
-          # [교정 포인트] with 내부의 하위 파라미터로 envs를 선언하고, 변수명을 명시합니다.
+          # 상위 env에 정의된 변수명을 명시하여 원격지(EC2) 내부 터미널 셸로 이식합니다.
           envs: ECR_REGISTRY
           script: |
-            # 1. 런타임에 주입된 가상 변수를 export 문을 통해 리눅스 셸에 확실히 바인딩합니다.
-            export ECR_REGISTRY=${{ steps.login-ecr.outputs.registry }}
-            
-            echo "AWS ECR 자격 증명 갱신 (EC2 내부 로그인)"
+            echo "1. AWS ECR 자격 증명 갱신 (EC2 내부 로그인)"
             aws ecr get-login-password --region ap-northeast-2 | sudo docker login --username AWS --password-stdin $ECR_REGISTRY
             
-            echo "기존 실행 중인 도커 컨테이너 검사 및 제거"
+            echo "2. 기존 실행 중인 도커 컨테이너 검사 및 제거"
             if [ "$(sudo docker ps -aq -f name=ch4-app)" ]; then
                 sudo docker stop ch4-app
                 sudo docker rm ch4-app
             fi
             
-            echo "AWS ECR로부터 최신 컨테이너 이미지 가져오기 (Pull)"
+            echo "3. AWS ECR로부터 최신 컨테이너 이미지 가져오기 (Pull)"
             sudo docker pull $ECR_REGISTRY/ch4-assignment:latest
             
-            echo "새 컨테이너 백그라운드 구동 (8080 포트 바인딩)"
+            echo "4. 새 컨테이너 백그라운드 구동 (8080 포트 바인딩)"
             sudo docker run -d --name ch4-app -p 8080:8080 $ECR_REGISTRY/ch4-assignment:latest
             
-            echo "불필요한 구버전 이미지 정리"
+            echo "5. 불필요한 구버전 이미지 정리"
             sudo docker image prune -f
