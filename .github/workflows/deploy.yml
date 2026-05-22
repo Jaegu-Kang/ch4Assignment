@@ -68,6 +68,7 @@ jobs:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USERNAME }}
           key: ${{ secrets.EC2_SSH_KEY }}
+          port: 22000
           envs: ECR_REGISTRY
           script: |
             echo "1. AWS ECR 자격 증명 갱신 (EC2 내부 로그인)"
