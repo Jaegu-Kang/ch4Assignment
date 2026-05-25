@@ -61,36 +61,36 @@ jobs:
           cache-to: type=gha,mode=max
 
       # =========================================================================
-      # [최종 교정 순서 1번] 기존 수동 appleboy SSH 플러그인을 제거하고 ASG 제어문을 장착합니다.
+      # [최종 교정 순서 1번] 수동 appleboy SSH 플러그인을 완벽히 들어내고 정석 ASG 오케스트레이션 문을 주입합니다.
       # =========================================================================
-      - name: AWS Auto Scaling Group 인스턴스 새로 고침 트리거 및 롤링 배포 가동
+      - name: AWS Auto Scaling Group 인스턴스 새로 고침 트리거 및 가용성 무인 자동 검증
         run: |
           echo "▶ 1. AWS CLI를 통해 오토 스케일링 그룹 새로 고침 신호 전사"
-          # 수동 EC2 접속을 폐기하고, ASG 명칭(ch4-asg)을 타겟팅하여 무인 롤링 배포를 시작합니다.
-          REFRESH_ID=$(aws ec2 start-instance-refresh \
+          # 상위 서비스 도메인을 'autoscaling' 정석 규격으로 정조준하여 배포 명령을 발송합니다.
+          REFRESH_ID=$(aws autoscaling start-instance-refresh \
             --auto-scaling-group-name ch4-asg \
             --query 'InstanceRefreshId' \
             --output text)
           
           echo "▷ 배포 트래킹 ID 발급 완료: $REFRESH_ID"
-          echo "▶ 2. 신형 자원 교체 및 로드 밸런서 Healthy 상태 모니터링 시작 (루프 폴링)"
+          echo "▶ 2. 신형 자원 무인 세대교체 및 대상 그룹 초록불(Healthy) 상태 실시간 추적 시작"
           
           while true; do
-            # AWS 인프라 엔진으로부터 현재 새로 고침 진행 상태를 획득합니다.
-            STATUS=$(aws ec2 describe-instance-refreshes \
+            # 30초마다 AWS 백본망을 폴링 찌르며 롤링 업데이트의 진행 컨디션을 분석합니다.
+            STATUS=$(aws autoscaling describe-instance-refreshes \
               --auto-scaling-group-name ch4-asg \
               --instance-refresh-ids $REFRESH_ID \
               --query 'InstanceRefreshes[0].Status' \
               --output text)
           
-            echo "⏰ 현재 AWS 인프라 자동 교체 및 헬스 체크 상태: [$STATUS]"
+            echo "⏰ 현재 AWS 인프라 자동 교체 및 대상 그룹 가용성 상태: [$STATUS]"
           
-            # 성공(Successful) 마크가 뜰 때까지 30초 버퍼를 두고 추적합니다.
+            # 최종 안착 성공 판정 시 루프를 완전히 파괴하고 파이프라인을 성공으로 마감합니다.
             if [ "$STATUS" = "Successful" ]; then
-              echo "🏆 [배포 자동 검증 완료] 모든 구형 서버 숙청 완료 및 신형 자원 초록불(Healthy) 점등 성공!"
+              echo "🏆 [배포 자동 검증 완료] 모든 구형 좀비 자원 숙청 완료 및 신형 자원 초록불(Healthy) 점등 성공!"
               break
             elif [ "$STATUS" = "Failed" ] || [ "$STATUS" = "Cancelled" ]; then
-              echo "🚨 [배포 자동 검증 실패] AWS 인프라 새로 고침 중 정책 충돌 및 결함 발생."
+              echo "🚨 [배포 자동 검증 실패] AWS 인프라 새로 고침 중 최소 정상 백분율 충돌 또는 가용성 결함 발생."
               exit 1
             fi
           
