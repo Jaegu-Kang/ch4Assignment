@@ -60,31 +60,39 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      - name: Appleboy SSH 명령어를 통해 EC2에 배포 실행
-        uses: appleboy/ssh-action@v1.0.3
-        env:
-          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-        with:
-          host: ${{ secrets.EC2_HOST }}
-          username: ${{ secrets.EC2_USERNAME }}
-          key: ${{ secrets.EC2_SSH_KEY }}
-          port: 22000
-          envs: ECR_REGISTRY
-          script: |
-            echo "1. AWS ECR 자격 증명 갱신 (EC2 내부 로그인)"
-            aws ecr get-login-password --region ap-northeast-2 | sudo docker login --username AWS --password-stdin $ECR_REGISTRY
-            
-            echo "2. 기존 실행 중인 도커 컨테이너 검사 및 제거"
-            if [ "$(sudo docker ps -aq -f name=ch4-app)" ]; then
-                sudo docker stop ch4-app
-                sudo docker rm ch4-app
+      # =========================================================================
+      # [최종 교정 순서 1번] 기존 수동 appleboy SSH 플러그인을 제거하고 ASG 제어문을 장착합니다.
+      # =========================================================================
+      - name: AWS Auto Scaling Group 인스턴스 새로 고침 트리거 및 롤링 배포 가동
+        run: |
+          echo "▶ 1. AWS CLI를 통해 오토 스케일링 그룹 새로 고침 신호 전사"
+          # 수동 EC2 접속을 폐기하고, ASG 명칭(ch4-asg)을 타겟팅하여 무인 롤링 배포를 시작합니다.
+          REFRESH_ID=$(aws ec2 start-instance-refresh \
+            --auto-scaling-group-name ch4-asg \
+            --query 'InstanceRefreshId' \
+            --output text)
+          
+          echo "▷ 배포 트래킹 ID 발급 완료: $REFRESH_ID"
+          echo "▶ 2. 신형 자원 교체 및 로드 밸런서 Healthy 상태 모니터링 시작 (루프 폴링)"
+          
+          while true; do
+            # AWS 인프라 엔진으로부터 현재 새로 고침 진행 상태를 획득합니다.
+            STATUS=$(aws ec2 describe-instance-refreshes \
+              --auto-scaling-group-name ch4-asg \
+              --instance-refresh-ids $REFRESH_ID \
+              --query 'InstanceRefreshes[0].Status' \
+              --output text)
+          
+            echo "⏰ 현재 AWS 인프라 자동 교체 및 헬스 체크 상태: [$STATUS]"
+          
+            # 성공(Successful) 마크가 뜰 때까지 30초 버퍼를 두고 추적합니다.
+            if [ "$STATUS" = "Successful" ]; then
+              echo "🏆 [배포 자동 검증 완료] 모든 구형 서버 숙청 완료 및 신형 자원 초록불(Healthy) 점등 성공!"
+              break
+            elif [ "$STATUS" = "Failed" ] || [ "$STATUS" = "Cancelled" ]; then
+              echo "🚨 [배포 자동 검증 실패] AWS 인프라 새로 고침 중 정책 충돌 및 결함 발생."
+              exit 1
             fi
-            
-            echo "3. AWS ECR로부터 최신 컨테이너 이미지 가져오기 (Pull)"
-            sudo docker pull $ECR_REGISTRY/ch4-assignment:latest
-            
-            echo "4. 새 컨테이너 백그라운드 구동 (8080 포트 바인딩)"
-            sudo docker run -d --name ch4-app -p 8080:8080 $ECR_REGISTRY/ch4-assignment:latest
-            
-            echo "5. 불필요한 구버전 이미지 정리"
-            sudo docker image prune -f
+          
+            sleep 30
+          done
