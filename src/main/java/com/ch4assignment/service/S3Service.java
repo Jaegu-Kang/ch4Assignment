@@ -87,7 +87,7 @@ public class S3Service {
                     .replace("-----END RSA PRIVATE KEY-----", "")
                     .replace("-----BEGIN PRIVATE KEY-----", "")
                     .replace("-----END PRIVATE KEY-----", "")
-                    .replaceAll("\\s+", "");
+                    .replaceAll("\\s+", ""); // 줄바꿈과 모든 공백 제거
 
             byte[] keyBytes = Base64.getDecoder().decode(keyContent);
             PKCS8EncodedKeySpec spec = new PKCS8EncodedKeySpec(keyBytes);
