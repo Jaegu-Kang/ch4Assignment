@@ -25,3 +25,19 @@ http://43.203.245.57:8080/actuator/info
 ### S3 비공개 버킷 프로필 이미지 접근 성공 스크린샷
 ![레벨 3](./images/downUrl.png)
 ![레벨 3](./images/downUrl2.png)
+
+## LV 4 - Docker & CI/CD 파이프라인 구축
+
+### Github Actions 성공 이미지
+![레벨 4](./images/action.png)
+
+### EC2 터미널 이미지
+![레벨 4](./images/dockerps.png)
+
+## LV 5 - 고가용성 아키텍처와 보안 도메인 연결 (ALB + ASG + HTTPS
+
+### HTTPS 적용된 도메인 URL
+https://api.jaegu.click/actuator/health
+
+### Target Group(대상 그룹) 이미지
+![레벨 5](./images/targetGroup.png)
