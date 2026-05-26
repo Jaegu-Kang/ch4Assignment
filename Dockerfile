@@ -1,5 +1,5 @@
-# 1. 빌드 스테이지 (멀티 플랫폼을 범용 지원하는 일반 jdk 이미지로 분리)
-FROM eclipse-temurin:17-jdk AS builder
+# 1. 빌드 스테이지 (호스트 아키텍처인 amd64 네이티브로 빌드하여 속도 극대화 및 exec format error 차단)
+FROM --platform=$BUILDPLATFORM eclipse-temurin:17-jdk AS builder
 WORKDIR /build
 
 # 빌드에 필요한 최소 파일들 복사
@@ -12,7 +12,7 @@ COPY src src
 RUN chmod +x ./gradlew
 RUN ./gradlew bootJar -x test
 
-# 2. 실행 스테이지
+# 2. 실행 스테이지 (최종 배포용 아키텍처 환경 - 멀티 플랫폼 지원)
 FROM eclipse-temurin:17-jdk
 WORKDIR /app
 
